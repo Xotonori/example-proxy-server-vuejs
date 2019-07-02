@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>test-proxy</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="app">
+
+        <div class="container">
+            <div class="row">
+                <div class="col-3 filters">
+
+                    <form action="" method="get">
+
+                        <div class="form-group mb-3 mt-2">
+                            <label for="selectCountry" class="font-weight-bold">Страна</label>
+                            <select class="form-control container-fluid bg-white text-body text-break" id="selectCountry" name="country">
+                                <option value="all">Все страны</option>
+                                <option v-for="(country, key) in countries" :value="key" :selected="filterParams.country == key">{{ country }}</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group proxy mb-3">
+                            <div class="h-proxy font-weight-bold">Тип прокси</div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" value="0" id="transparent" name="proxy_type" :checked="filterParams.proxy_type == 0">
+                                <label class="form-check-label" for="transparent">
+                                    Открытые
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" value="1" id="anonymous" name="proxy_type" :checked="filterParams.proxy_type == 1">
+                                <label class="form-check-label" for="anonymous">
+                                    Анонимные
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" value="2" id="elite" name="proxy_type" :checked="filterParams.proxy_type == 2">
+                                <label class="form-check-label" for="elite">
+                                    Элитные
+                                </label>
+                            </div>
+
+                        </div>
+
+                        <div class="activity mb-3">
+                            <div class="h-proxy font-weight-bold">Активность</div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="alive" name="alive" :checked="filterParams.alive == 'on'">
+                                <label class="form-check-label" for="alive">
+                                    Активные
+                                </label>
+                            </div>
+
+                        </div>
+
+                        <button type="submit" class="btn btn-info mb-3" id="accept">Показать</button>
+                    </form>
+                    <button type="button" class="btn btn-info mb-3" id="reset" @click="resetParams">Сбросить все</button>
+                </div>
+                <div class="col-9 table-wrap">
+                    <table class="table mt-3">
+                        <thead class="thead-dark">
+                        <tr>
+                            <th scope="col">IP Адрес</th>
+                            <th scope="col">Порт</th>
+                            <th scope="col">Страна</th>
+                            <th scope="col">Скорость</th>
+                            <th scope="col">Тип прокси</th>
+                            <th scope="col">Активность</th>
+                            <th scope="col">Последнее обновление</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-for="data in generalProxyData">
+                            <td>{{ data.host }}</td>
+                            <td>{{ data.port }}</td>
+                            <td>{{ data.country }}</td>
+                            <td>{{ data.port_response_time }}</td>
+                            <td>{{ data.proxy_type }}</td>
+                            <td>{{ data.alive }}</td>
+                            <td>{{ data.modified }}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.js"></script>
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                generalProxyData: [],
+                countries: {
+                    'RU': 'Россия',
+                    'UA': 'Украина',
+                    'PL': 'Польша',
+                    'AL': 'Албания',
+                    'TH': 'Тайланд',
+                    'JP': 'Япония',
+                    'ZA': 'ЮАР',
+                    'ID': 'Индонезия',
+                    'HU': 'Венгрия',
+                    'US': 'США'
+                },
+                currentProxyData: [],
+                filterParams: {}
+            },
+
+            mounted () {
+                this.defineGeneralProxyData();
+                this.addGetParams();
+                this.getCurrentProxyData();
+            },
+
+            methods: {
+                defineGeneralProxyData () {
+                    let xmlhttp = this.getXmlHttp();
+                    xmlhttp.open('GET', 'json.json', false);
+                    xmlhttp.send(null);
+                    if (xmlhttp.status == 200) {
+                        this.generalProxyData = JSON.parse(xmlhttp.responseText);
+                    }
+                },
+
+                getXmlHttp () {
+                    let xmlhttp;
+                    try {
+                        xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
+                    }
+                    catch (e) {
+                        try {
+                            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                        } catch (E) {
+                            xmlhttp = false;
+                        }
+                    }
+                    if (!xmlhttp && typeof XMLHttpRequest != 'undefined') {
+                        xmlhttp = new XMLHttpRequest();
+                    }
+                    return xmlhttp;
+                },
+
+                resetParams () {
+                    window.location = window.location.pathname;
+                },
+
+                addGetParams () {
+                    let paramsString = window.location.search;
+                    let allParams = new URLSearchParams(paramsString);
+
+                    for (let Param of allParams) {
+                        this.filterParams[Param[0]] = Param[1];
+                    }
+                },
+
+                amountFilterParams () {
+                    let counter = 0;
+                    for (let key in this.filterParams) {
+                        counter++;
+                    }
+                    return counter;
+                },
+
+                getCurrentProxyData () {
+                    if (this.amountFilterParams() > 0) {
+                        let proxyData = this.generalProxyData;
+                        let filters = this.filterParams;
+
+                        for (let i = 0; i < proxyData.length; i++) {
+                            let validation = true;
+                            let counter = 1;
+
+                            for (let filter in filters) {
+                                if (validation) {
+                                    if (Object.keys(proxyData[i]).indexOf(filter) != -1) {
+                                        let currentProxyDataValue = proxyData[i][filter];
+                                        let currentFilterValue = filters[filter];
+
+                                        if (currentFilterValue == 'all') {
+                                            if (counter === this.amountFilterParams() ) {
+                                                this.currentProxyData.push(proxyData[i]);
+                                                break;
+                                            }
+                                            counter++;
+                                            continue;
+                                        }
+
+                                        if (currentProxyDataValue == currentFilterValue
+                                            || (currentProxyDataValue && currentFilterValue == 'on')) {
+                                            if ( counter === this.amountFilterParams() ) {
+                                                this.currentProxyData.push(proxyData[i]);
+                                            }
+                                        } else {
+                                            validation = false;
+                                        }
+                                    }
+                                }
+                                counter++;
+                            }
+                        }
+                        this.generalProxyData = this.currentProxyData;
+                    }
+                }
+            }
+        })
+
+    </script>
+
+</body>
+</html>
